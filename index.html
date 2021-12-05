@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="highcharts.js"></script>
+    <meta charset="UTF-8">
+    <title>Wheater Chart</title>
+</head>
+
+<body>
+
+    <h1>Wheater Chart</h1>
+    <button onclick="drawChart()"> DRAW </button>
+    <button onclick="showDayDescription()"> Show day description </button>
+    <div id="container"></div>
+
+    <script>
+        var rain_description = [];
+        var thedays = [];
+
+
+        // CHART 
+        var line_chart = {
+            chart: {
+                type: 'line'
+            },
+            title: {
+                text: 'Weather diagram'
+            },
+            xAxis: {
+                type: 'datetime',
+            },
+            plotOptions: {
+                series: {
+                    dataLabels: {
+                        enabled: true
+                    }
+                }
+            },
+            yAxis: [{
+
+                title: {
+                    text: 'Temperatur in °C'
+                }
+            }, {
+                title: {
+                    text: 'Rainfall in mm'
+                },
+                opposite: true
+            }],
+            series: [{
+
+            }, {
+
+            }, {
+
+            }],
+            tooltip: {
+
+                shared: true
+            }
+        }
+
+        function drawChart() {
+
+            var xmlobj = new XMLHttpRequest();
+            xmlobj.open("GET", "forecast-graz-20210125.json", true);
+            xmlobj.send(null);
+            xmlobj.onreadystatechange = function() {
+
+                if (xmlobj.readyState == 4 && xmlobj.status == "200") {
+
+                    const jsonobj = JSON.parse(xmlobj.responseText);
+                    var max_temp = -100;
+                    var min_temp = 100;
+                    var last_day = new Date(jsonobj.hourly[0].dt * 1000).toDateString();
+
+                    var min_temp_data = [];
+                    var max_temp_data = [];
+                    var rain_data = [];
+
+                    var min_temp_entry = [];
+                    var max_temp_entry = [];
+                    var rain_entry = [];
+
+                    var cnt = 0;
+
+                    for (var i = 0; i < jsonobj.daily.length; i++) {
+
+                        var t = jsonobj.daily[i].dt * 1000 - 11 * 3600000;
+                        var current_day = new Date(t).toDateString();
+
+                        thedays[i] = current_day;
+
+                        var min_temp_entry = [];
+                        var max_temp_entry = [];
+                        var rain_entry = [];
+
+                        min_temp_entry[0] = t;
+                        min_temp_entry[1] = jsonobj.daily[i].temp.min;
+                        min_temp_data[i] = min_temp_entry;
+
+                        max_temp_entry[0] = t;
+                        max_temp_entry[1] = jsonobj.daily[i].temp.max;
+                        max_temp_data[i] = max_temp_entry;
+
+                        if (jsonobj.daily[i].weather[0].description.includes("rain")) {
+                            rain_entry[0] = t;
+                            rain_entry[1] = jsonobj.daily[i].rain;
+                            rain_data[i] = rain_entry;
+
+                            rain_description[i] = jsonobj.daily[i].weather[0].description;
+
+                        } else {
+                            rain_entry[0] = t;
+                            rain_entry[1] = 0;
+                            rain_data[i] = rain_entry;
+
+                            rain_description[i] = "no rain";
+                        }
+                        console.log(current_day);
+                    }
+
+                    console.table(rain_description);
+
+                    line_chart.series[0].name = "Min Temp";
+                    line_chart.series[0].data = min_temp_data;
+
+                    line_chart.series[1].name = "Max Temp";
+                    line_chart.series[1].data = max_temp_data;
+
+                    line_chart.series[2].name = "Rainfall";
+                    line_chart.series[2].data = rain_data;
+                    line_chart.series[2].type = "area";
+                    line_chart.series[2].yAxis = 1;
+                    line_chart.series[2].opacity = 0.8;
+
+                    Highcharts.chart('container', line_chart);
+                }
+            }
+        }
+
+        function showDayDescription() {
+
+            if ((!!document.getElementById("mytable"))) {
+                document.getElementById("mytable").remove();
+            }
+
+            var table = document.createElement('table');
+            table.setAttribute("id", "mytable");
+
+            for (var i = 0; i < rain_description.length; i++) {
+                var tr = document.createElement('tr');
+
+                var td1 = document.createElement('td');
+                var td2 = document.createElement('td');
+
+                var text1 = document.createTextNode(thedays[i]);
+                var text2 = document.createTextNode('has ' + rain_description[i]);
+
+                td1.appendChild(text1);
+                td2.appendChild(text2);
+                tr.appendChild(td1);
+                tr.appendChild(td2);
+
+                table.appendChild(tr);
+            }
+            document.body.appendChild(table);
+        }
+    </script>
+</body>
+
+</html>
